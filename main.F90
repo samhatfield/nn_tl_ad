@@ -25,7 +25,8 @@ PROGRAM MAIN
     CALL INITIALIZE1(X1)
     
     DO I = 0, 7
-        DX = 10.0_JPRM**(-REAL(I, JPRM))
+        CALL INITIALIZE1(DX)
+        DX = DX*10.0_JPRM**(-REAL(I, JPRM))
         X2 = X1 + DX
 
         WRITE (*,'(A)') "====================================================="
