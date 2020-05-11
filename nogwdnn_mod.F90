@@ -44,8 +44,8 @@ SUBROUTINE NN(X,Y)
   !FIRST LAYER
   T1 = INPUT_B
   !IF (ERRORCHECK(T1)) PRINT*,0,T1
-  CALL DGEMM('N','N',NWIDTH,1,NINP,1.0_JPRM,INPUT,NWIDTH,&
-       & X,NINP,1._JPRM,T1,NWIDTH)
+  CALL DGEMV('N',NWIDTH,NINP,1.0_JPRM,INPUT,NWIDTH,&
+       & X,1,1._JPRM,T1,1)
   !IF (ERRORCHECK(T1)) PRINT*,0.5,T1
   T2 = NONLINEARITY(T1)
   !IF (ERRORCHECK(T2)) PRINT*,1,T2
@@ -55,8 +55,8 @@ SUBROUTINE NN(X,Y)
   DO I = 1,NHIDDEN-1
      T1 = HIDDEN_B(:,I)
      !IF (ERRORCHECK(T1)) PRINT*,I+0.25,T1
-     CALL DGEMM('N','N',NWIDTH,1,NWIDTH,1.0_JPRM,HIDDEN(:,:,I),NWIDTH,&
-          & T2,NWIDTH,1._JPRM,T1,NWIDTH)
+     CALL DGEMV('N',NWIDTH,NWIDTH,1.0_JPRM,HIDDEN(:,:,I),NWIDTH,&
+          & T2,1,1._JPRM,T1,1)
      !IF (ERRORCHECK(T1)) PRINT*,I+0.5,T1
      T2 = NONLINEARITY(T1)     
      !IF (ERRORCHECK(T2)) PRINT*,I+1,T2
@@ -65,8 +65,8 @@ SUBROUTINE NN(X,Y)
 
   Y = OUTPUT_B
   !IF (ERRORCHECK(Y)) PRINT*,NHIDDEN+0.25,Y
-  CALL DGEMM('N','N',NOUT,1,NWIDTH,1.0_JPRM,OUTPUT,NOUT,&
-       & T2,NWIDTH,1._JPRM,Y,NOUT)
+  CALL DGEMV('N',NOUT,NWIDTH,1.0_JPRM,OUTPUT,NOUT,&
+       & T2,1,1._JPRM,Y,1)
   !IF (ERRORCHECK(Y)) PRINT*,NHIDDEN+0.5,Y
   !print*,Y
 
@@ -84,71 +84,71 @@ SUBROUTINE NN_TL(X, DX, Y, DY)
     ALLOCATE(T1(NWIDTH), T2(NWIDTH), T_NL(NWIDTH))
 
     ! Weight matrix times input perturbation
-    CALL DGEMM('N', 'N', &
-        & NWIDTH, 1, NINP, &
+    CALL DGEMV('N', &
+        & NWIDTH, NINP, &
         & 1.0_JPRM, &
         & INPUT, NWIDTH, &
-        & DX, NINP, &
+        & DX, 1, &
         & 0.0_JPRM, &
-        & T1, NWIDTH)
+        & T1, 1)
 
     ! Nonlinear "trajectory"
     T_NL = INPUT_B
-    CALL DGEMM('N', 'N', &
-        & NWIDTH, 1, NINP, &
+    CALL DGEMV('N', &
+        & NWIDTH, NINP, &
         & 1.0_JPRM, &
         & INPUT, NWIDTH, &
-        & X, NINP, &
+        & X, 1, &
         & 1.0_JPRM, &
-        & T_NL, NWIDTH)
+        & T_NL, 1)
 
     T2 = NONLINEARITY_TL(T_NL) * T1
 
     ! Hidden layers
     DO I = 1, NHIDDEN - 1
         ! Weight matrix times input perturbation
-        CALL DGEMM('N', 'N', &
-            & NWIDTH, 1, NWIDTH, &
+        CALL DGEMV('N', &
+            & NWIDTH, NWIDTH, &
             & 1.0_JPRM, &
             & HIDDEN(:,:,I), NWIDTH, &
-            & T2, NWIDTH, &
+            & T2, 1, &
             & 0.0_JPRM, &
-            & T1, NWIDTH)
+            & T1, 1)
 
         ! Nonlinear "trajectory"
         T2 = NONLINEARITY(T_NL)
         T_NL = HIDDEN_B(:,I)
-        CALL DGEMM('N', 'N', &
-            & NWIDTH, 1, NWIDTH, &
+        CALL DGEMV('N', &
+            & NWIDTH, NWIDTH, &
             & 1.0_JPRM, &
             & HIDDEN(:,:,I), NWIDTH, &
-            & T2, NWIDTH, &
+            & T2, 1, &
             & 1.0_JPRM, &
-            & T_NL, NWIDTH)
+            & T_NL, 1)
 
         T2 = NONLINEARITY_TL(T_NL) * T1
     END DO
 
     ! Output layer (no activation function)
-    CALL DGEMM('N', 'N', &
-        & NOUT, 1, NWIDTH, &
+    CALL DGEMV('N', &
+        & NOUT, NWIDTH, &
         & 1.0_JPRM, &
         & OUTPUT, NOUT, &
-        & T2, NWIDTH, &
+        & T2, 1, &
         & 0.0_JPRM, &
-        & DY, NOUT)
+        & DY, 1)
 
     ! Nonlinear "trajectory"
     T2 = NONLINEARITY(T_NL)
     Y = OUTPUT_B
     T_NL = HIDDEN_B(:,I)
-    CALL DGEMM('N', 'N', &
-        & NOUT, 1, NWIDTH, &
+    CALL DGEMV('N', &
+        & NOUT, NWIDTH, &
         & 1.0_JPRM, &
         & OUTPUT, NOUT, &
-        & T2, NWIDTH, &
+        & T2, 1, &
         & 1.0_JPRM, &
-        & Y, NOUT)
+        & Y, 1)
 END SUBROUTINE NN_TL
 
 ! ---------------------------------------------------------------------------------
@@ -163,66 +163,66 @@ SUBROUTINE NN_AD(X, GRADY, GRADX)
     ALLOCATE(T1(NWIDTH), T2(NWIDTH), T_NL(NWIDTH))
 
     ! Output layer (no activation function)
-    CALL DGEMM('T', 'N', &
-        & NWIDTH, 1, NOUT, &
+    CALL DGEMV('T', &
+        & NWIDTH, NOUT, &
         & 1.0_JPRM, &
         & OUTPUT, NOUT, &
-        & GRADY, NOUT, &
+        & GRADY, 1, &
         & 0.0_JPRM, &
-        & T1, NWIDTH)
+        & T1, 1)
 
     ! Hidden layers
     DO I = NHIDDEN-1, 1, -1
         ! Compute nonlinear trajectory up to this hidden layer
         T_NL = INPUT_B
-        CALL DGEMM('N', 'N', &
-            & NWIDTH, 1, NINP, &
+        CALL DGEMV('N', &
+            & NWIDTH, NINP, &
             & 1.0_JPRM, &
             & INPUT, NWIDTH, &
-            & X, NINP, &
+            & X, 1, &
             & 1.0_JPRM, &
-            & T_NL, NWIDTH)
+            & T_NL, 1)
 
         DO J = 1, I
            T2 = NONLINEARITY(T_NL)
            T_NL = HIDDEN_B(:,J)
-           CALL DGEMM('N', 'N', &
-               & NWIDTH, 1, NWIDTH, &
+           CALL DGEMV('N', &
+               & NWIDTH, NWIDTH, &
                & 1.0_JPRM, &
                & HIDDEN(:,:,J), NWIDTH, &
-               & T2, NWIDTH, &
+               & T2, 1, &
                & 1.0_JPRM, &
-               & T_NL, NWIDTH)
+               & T_NL, 1)
         END DO
 
         T2 = NONLINEARITY_TL(T_NL) * T1
-        CALL DGEMM('T', 'N', &
-            & NWIDTH, 1, NWIDTH, &
+        CALL DGEMV('T', &
+            & NWIDTH, NWIDTH, &
             & 1.0_JPRM, &
             & HIDDEN(:,:,I), NWIDTH, &
-            & T2, NWIDTH, &
+            & T2, 1, &
             & 0.0_JPRM, &
-            & T1, NWIDTH)
+            & T1, 1)
     END DO
 
     T_NL = INPUT_B
-    CALL DGEMM('N', 'N', &
-        & NWIDTH, 1, NINP, &
+    CALL DGEMV('N', &
+        & NWIDTH, NINP, &
         & 1.0_JPRM, &
         & INPUT, NWIDTH, &
-        & X, NINP, &
+        & X, 1, &
         & 1.0_JPRM, &
-        & T_NL, NWIDTH)
+        & T_NL, 1)
 
     ! Input layer
     T2 = NONLINEARITY_TL(T_NL) * T1
-    CALL DGEMM('T', 'N', &
-        & NINP, 1, NWIDTH, &
+    CALL DGEMV('T', &
+        & NINP, NWIDTH, &
         & 1.0_JPRM, &
         & INPUT, NWIDTH, &
-        & T2, NWIDTH, &
+        & T2, 1, &
         & 0.0_JPRM, &
-        & GRADX, NINP)
+        & GRADX, 1)
 END SUBROUTINE NN_AD
 
 END MODULE NOGWDNN_MOD
