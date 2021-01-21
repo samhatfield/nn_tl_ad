@@ -196,7 +196,7 @@ SUBROUTINE NN_AD(X, GRADY, GRADX)
 
     ! Output layer (no activation function)
     CALL GEMV('T', &
-        & NWIDTH, NOUT, &
+        & NOUT, NWIDTH, &
         & 1.0_JPRB, &
         & OUTPUT, NOUT, &
         & GRADY, 1, &
@@ -249,7 +249,7 @@ SUBROUTINE NN_AD(X, GRADY, GRADX)
     ! Input layer
     T2 = NONLINEARITY_TL(T_NL) * T1
     CALL GEMV('T', &
-        & NINP, NWIDTH, &
+        & NWIDTH, NINP, &
         & 1.0_JPRB, &
         & INPUT, NWIDTH, &
         & T2, 1, &
