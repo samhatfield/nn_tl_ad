@@ -1,11 +1,13 @@
 PROGRAM MAIN
-    USE NOGWDNN_MOD, ONLY: NN, NN_TL
+    USE NOGWDNN_MOD, ONLY: NN, NN_TL, NN_AD
     USE YONOGWDNN
     USE PARKIND1, ONLY: JPRB
 
     IMPLICIT NONE
     
-    REAL(JPRB) :: X1(NINP), X2(NINP), Y1(NOUT), Y2(NOUT), Y3(NOUT), DX(NINP), DY(NOUT), DIFF
+    REAL(JPRB) :: X1(NINP), X2(NINP), Y1(NOUT), Y2(NOUT), Y3(NOUT), DX(NINP), DY(NOUT)
+    REAL(JPRB) :: DX1(NINP), DX2(NINP), DY1(NOUT), DY2(NOUT)
+    REAL(JPRD) :: LHS, RHS, DIFF
     INTEGER :: I
     
     ALLOCATE(INPUT_B(NWIDTH))
@@ -44,6 +46,29 @@ PROGRAM MAIN
         WRITE (*,'(5F21.17)') Y1
         WRITE (*,'(5F21.17)') Y3
     END DO
+
+    ! Adjoint test
+    CALL INITIALIZE1(DX1)
+    CALL INITIALIZE1(DY2)
+    DX1 = DX1*10.0_JPRB**(-REAL(1, JPRB))
+    DY2 = DY2*10.0_JPRB**(-REAL(1, JPRB))
+
+    CALL NN_TL(X1, DX1, Y1, DY1)
+    CALL NN_AD(X1, DY2, DX2)
+
+    WRITE (*,'(A)') "====================================================="
+    WRITE (*,'(A)') ""
+    WRITE (*,'(A)') "====================================================="
+    WRITE (*,'(A)') "Adjoint test"
+    WRITE (*,'(A)') "The following two numbers must be as similar as possible"
+
+    LHS = DOT_PRODUCT(DY1, DY2)
+    RHS = DOT_PRODUCT(DX1, DX2)
+    WRITE (*,'(A,F21.17)') 'LHS', LHS
+    WRITE (*,'(A,F21.17)') 'RHS', RHS
+    DIFF = ABS(LHS - RHS)
+    WRITE (*,'(A,I3)') "Difference of 1st element around digit number ", NINT(ABS(LOG10(DIFF)))
+
     
 CONTAINS
     SUBROUTINE INITIALIZE1(X)
