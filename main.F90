@@ -1,13 +1,13 @@
 PROGRAM MAIN
     USE NOGWDNN_MOD, ONLY: NN, NN_TL, NN_AD
     USE YONOGWDNN
-    USE PARKIND1, ONLY: JPRB
+    USE PARKIND1, ONLY: NNP, DOUB
 
     IMPLICIT NONE
     
-    REAL(JPRB) :: X1(NINP), X2(NINP), Y1(NOUT), Y2(NOUT), Y3(NOUT), DX(NINP), DY(NOUT)
-    REAL(JPRB) :: DX1(NINP), DX2(NINP), DY1(NOUT), DY2(NOUT)
-    REAL(JPRD) :: LHS, RHS, DIFF
+    REAL(NNP) :: X1(NINP), X2(NINP), Y1(NOUT), Y2(NOUT), Y3(NOUT), DX(NINP), DY(NOUT)
+    REAL(NNP) :: DX1(NINP), DX2(NINP), DY1(NOUT), DY2(NOUT)
+    REAL(DOUB) :: LHS, RHS, DIFF
     INTEGER :: I
     
     ALLOCATE(INPUT_B(NWIDTH))
@@ -28,7 +28,7 @@ PROGRAM MAIN
     
     DO I = 0, 7
         CALL INITIALIZE1(DX)
-        DX = DX*10.0_JPRB**(-REAL(I, JPRB))
+        DX = DX*10.0_NNP**(-REAL(I, NNP))
         X2 = X1 + DX
 
         WRITE (*,'(A)') "====================================================="
@@ -50,8 +50,8 @@ PROGRAM MAIN
     ! Adjoint test
     CALL INITIALIZE1(DX1)
     CALL INITIALIZE1(DY2)
-    DX1 = DX1*10.0_JPRB**(-REAL(1, JPRB))
-    DY2 = DY2*10.0_JPRB**(-REAL(1, JPRB))
+    DX1 = DX1*10.0_NNP**(-REAL(1, NNP))
+    DY2 = DY2*10.0_NNP**(-REAL(1, NNP))
 
     CALL NN_TL(X1, DX1, Y1, DY1)
     CALL NN_AD(X1, DY2, DX2)
@@ -72,51 +72,51 @@ PROGRAM MAIN
     
 CONTAINS
     SUBROUTINE INITIALIZE1(X)
-        REAL(JPRB), INTENT(OUT) :: X(:)
+        REAL(NNP), INTENT(OUT) :: X(:)
         
         INTEGER :: I
         
         DO I = 1, SIZE(X)
-            X(I) = RANDN(0.0_JPRB, 1.0_JPRB)
+            X(I) = RANDN(0.0_NNP, 1.0_NNP)
         END DO
     END SUBROUTINE INITIALIZE1
 
     SUBROUTINE INITIALIZE2(X)
-        REAL(JPRB), INTENT(OUT) :: X(:,:)
+        REAL(NNP), INTENT(OUT) :: X(:,:)
         
         INTEGER :: I, J
         
         DO I = 1, SIZE(X, 1)
             DO J = 1, SIZE(X, 2)
-                X(I, J) = RANDN(0.0_JPRB, 1.0_JPRB)
+                X(I, J) = RANDN(0.0_NNP, 1.0_NNP)
             END DO
         END DO
     END SUBROUTINE INITIALIZE2
 
     SUBROUTINE INITIALIZE3(X)
-        REAL(JPRB), INTENT(OUT) :: X(:,:,:)
+        REAL(NNP), INTENT(OUT) :: X(:,:,:)
         
         INTEGER :: I, J, K
         
         DO I = 1, SIZE(X, 1)
             DO J = 1, SIZE(X, 2)
                 DO K = 1, SIZE(X, 3)
-                    X(I, J, K) = RANDN(0.0_JPRB, 1.0_JPRB)
+                    X(I, J, K) = RANDN(0.0_NNP, 1.0_NNP)
                 END DO
             END DO
         END DO
     END SUBROUTINE INITIALIZE3
 
     FUNCTION RANDN(MEAN, STDEV)
-        REAL(JPRB), INTENT(IN) :: MEAN, STDEV
-        REAL(JPRB) :: U, V, RANDN
-        REAL(JPRB) :: RAND(2)
+        REAL(NNP), INTENT(IN) :: MEAN, STDEV
+        REAL(NNP) :: U, V, RANDN
+        REAL(NNP) :: RAND(2)
 
         CALL RANDOM_NUMBER(RAND)
 
         ! Box-Muller method
-        U = (-2.0_JPRB * LOG(RAND(1))) ** 0.5_JPRB
-        V =   2.0_JPRB * 6.28318530718_JPRB * RAND(2)
+        U = (-2.0_NNP * LOG(RAND(1))) ** 0.5_NNP
+        V =   2.0_NNP * 6.28318530718_NNP * RAND(2)
         RANDN = MEAN + STDEV * U * SIN(V)
     END FUNCTION RANDN
 END PROGRAM MAIN
